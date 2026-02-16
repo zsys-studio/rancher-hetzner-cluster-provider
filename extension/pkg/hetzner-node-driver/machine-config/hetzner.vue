@@ -47,11 +47,17 @@ export default {
       this.credential = null;
     }
 
-    // Auto-populate cluster ID for shared firewall and resource labeling
+    // Auto-populate cluster ID for shared firewall and resource labeling.
+    // On new clusters, the name starts empty and gets set as the user types.
+    // On existing clusters (edit mode), the name is already present at mount.
     const clusterName = this.cluster?.metadata?.name;
 
     if (clusterName && !this.value.clusterId) {
       this.value.clusterId = clusterName;
+      this.clusterIdAutoSet = true;
+    } else if (clusterName && this.value.clusterId === clusterName) {
+      // Editing an existing cluster where clusterId was previously auto-set
+      this.clusterIdAutoSet = true;
     }
 
     try {
@@ -135,6 +141,7 @@ export default {
       sshKeyOptions:     [],
       useExistingSshKey: !!this.value?.existingSshKey,
       firewallMode,
+      clusterIdAutoSet:  false,
       errors:            [],
     };
   },
@@ -145,8 +152,9 @@ export default {
     },
 
     'cluster.metadata.name'(name) {
-      if (name && !this.value.clusterId) {
+      if (name && (!this.value.clusterId || this.clusterIdAutoSet)) {
         this.value.clusterId = name;
+        this.clusterIdAutoSet = true;
       }
     },
 
