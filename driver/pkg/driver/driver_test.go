@@ -124,6 +124,25 @@ func standardLocation() schema.Location {
 	}
 }
 
+// registerStandardEndpoints sets up the minimal API mocks needed for PreCreateCheck to pass.
+func registerStandardEndpoints(mux *http.ServeMux) {
+	mux.HandleFunc("/server_types", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.ServerTypeListResponse{
+			ServerTypes: []schema.ServerType{standardServerType()},
+		})
+	})
+	mux.HandleFunc("/locations", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.LocationListResponse{
+			Locations: []schema.Location{standardLocation()},
+		})
+	})
+	mux.HandleFunc("/images", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.ImageListResponse{
+			Images: []schema.Image{standardImage()},
+		})
+	})
+}
+
 // standardServer returns a minimal server for tests.
 func standardServer(id int64, status string) schema.Server {
 	return schema.Server{
@@ -2346,18 +2365,63 @@ func TestFirewallIdentifier(t *testing.T) {
 	}
 }
 
-func TestPreCreateCheck_RequiresClusterIDForFirewall(t *testing.T) {
+func TestPreCreateCheck_AutoDerivesClusterIDFromMachineName(t *testing.T) {
+	mux := http.NewServeMux()
+	registerStandardEndpoints(mux)
+	d, _ := newTestDriver(t, mux)
+	d.CreateFirewall = true
+	d.ClusterID = ""
+	d.MachineName = "demo-rancher-cluster-cp01-knp75-5vp4d"
+
+	err := d.PreCreateCheck()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if d.ClusterID != "demo-rancher-cluster" {
+		t.Errorf("ClusterID = %q, want %q", d.ClusterID, "demo-rancher-cluster")
+	}
+}
+
+func TestPreCreateCheck_RequiresClusterIDWhenCannotDerive(t *testing.T) {
 	mux := http.NewServeMux()
 	d, _ := newTestDriver(t, mux)
 	d.CreateFirewall = true
 	d.ClusterID = ""
+	d.MachineName = "ab-cd" // too few segments
 
 	err := d.PreCreateCheck()
 	if err == nil {
-		t.Fatal("expected error when CreateFirewall is true and ClusterID is empty")
+		t.Fatal("expected error when CreateFirewall is true and ClusterID cannot be derived")
 	}
 	if !strings.Contains(err.Error(), "hetzner-cluster-id") {
 		t.Errorf("error = %q, want it to mention hetzner-cluster-id", err)
+	}
+}
+
+func TestClusterIDFromMachineName(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		// Standard Rancher naming: <cluster>-<pool>-<5char>-<5char>
+		{"demo-rancher-cluster-cp01-knp75-5vp4d", "demo-rancher-cluster"},
+		{"rancher-debug-hetz-cp-sx76z-q5fv5", "rancher-debug-hetz"},
+		{"rancher-debug-hetz-workers01-z89zp-jn6xf", "rancher-debug-hetz"},
+		{"my-cluster-pool1-abc12-def34", "my-cluster"},
+		// Minimal valid name
+		{"a-b-abc12-def34", "a"},
+		// Edge cases — no valid suffix pattern
+		{"ab-cd", ""},     // no 5-char hash segments
+		{"abcd", ""},      // no hyphens at all
+		{"a-b-c", ""},     // no 5-char hash pattern
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := clusterIDFromMachineName(tt.name)
+			if got != tt.want {
+				t.Errorf("clusterIDFromMachineName(%q) = %q, want %q", tt.name, got, tt.want)
+			}
+		})
 	}
 }
 
