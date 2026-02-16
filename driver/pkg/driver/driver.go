@@ -118,8 +118,16 @@ func (d *Driver) PreCreateCheck() error {
 		return fmt.Errorf("cannot use both --hetzner-create-firewall and --hetzner-firewalls; choose one firewall mode")
 	}
 	if d.CreateFirewall && d.ClusterID == "" {
-		return fmt.Errorf("--hetzner-cluster-id is required when --hetzner-create-firewall is enabled; " +
-			"the cluster ID identifies the shared firewall across all node pools")
+		// Auto-derive cluster ID from the machine name. Rancher names machines as
+		// <cluster>-<pool>-<hash>-<hash>, so stripping the last 3 segments gives us
+		// the cluster name which is used as the shared firewall identifier.
+		derived := clusterIDFromMachineName(d.MachineName)
+		if derived == "" {
+			return fmt.Errorf("--hetzner-cluster-id is required when --hetzner-create-firewall is enabled; " +
+				"the cluster ID identifies the shared firewall across all node pools")
+		}
+		d.ClusterID = derived
+		log.Infof("Auto-derived cluster ID %q from machine name %q", d.ClusterID, d.MachineName)
 	}
 	if err := validateClusterID(d.ClusterID); err != nil {
 		return err
@@ -400,6 +408,17 @@ func (d *Driver) buildServerCreateOpts(ctx context.Context, autoSSHKey *hcloud.S
 	}
 
 	return opts, nil
+}
+
+// clusterIDFromMachineName extracts the cluster name from a Rancher machine name.
+// Rancher names machines as <cluster>-<pool>-<hash>-<hash>, so we strip the last
+// three hyphen-separated segments to recover the cluster name.
+func clusterIDFromMachineName(name string) string {
+	parts := strings.Split(name, "-")
+	if len(parts) < 4 {
+		return ""
+	}
+	return sanitizeClusterID(strings.Join(parts[:len(parts)-3], "-"))
 }
 
 // resourceLabels returns the standard labels applied to all Hetzner resources.
