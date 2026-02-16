@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": false,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "paths": {
+      "@shell/*": ["./node_modules/@rancher/shell/*"],
+      "@components/*": ["./node_modules/@rancher/shell/rancher-components/src/components/*"]
+    }
+  }
+}

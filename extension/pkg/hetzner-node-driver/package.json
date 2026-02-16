@@ -1,0 +1,23 @@
+{
+  "name": "hetzner-node-driver",
+  "description": "Hetzner Cloud Node Driver for Rancher",
+  "version": "1.0.0",
+  "private": false,
+  "rancher": {
+    "annotations": {
+      "catalog.cattle.io/rancher-version": ">= 2.11.0 < 2.14.0",
+      "catalog.cattle.io/ui-extensions-version": ">= 3.0.0 < 4.0.0",
+      "catalog.cattle.io/kube-version": ">= 1.26.0",
+      "catalog.cattle.io/display-name": "Hetzner Cloud Node Driver"
+    }
+  },
+  "scripts": {
+    "dev": "nuxt dev",
+    "nuxt": "nuxt"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

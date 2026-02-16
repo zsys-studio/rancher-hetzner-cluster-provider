@@ -1,0 +1,49 @@
+name: Publish Extension
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: publish-extension
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish Extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: yarn
+          cache-dependency-path: extension/yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Build and package extension
+        run: yarn publish-pkgs -s zsys-studio/rancher-hetzner-cluster-provider -b rancher-extension -f
+
+      - name: Deploy to rancher-extension branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: rancher-extension
+          publish_dir: extension/tmp
+          keep_files: true

@@ -1,0 +1,17 @@
+# Go binaries
+driver/docker-machine-driver-hetzner
+driver/docker-machine-driver-hetzner_*
+driver/*.tar.gz
+
+# Node
+**/node_modules/
+
+extension/.nuxt/
+extension/dist/
+extension/dist-pkg/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ─── Compute version ───
+      - name: Compute version
+        id: version
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+
+          if [ "$BRANCH" = "main" ]; then
+            LATEST=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' \
+              | grep -v '-' \
+              | sort -V \
+              | tail -n1)
+
+            if [ -z "$LATEST" ]; then
+              TAG="v0.1.0"
+            else
+              MAJOR=$(echo "$LATEST" | sed 's/^v//' | cut -d. -f1)
+              MINOR=$(echo "$LATEST" | sed 's/^v//' | cut -d. -f2)
+              TAG="v${MAJOR}.$((MINOR + 1)).0"
+            fi
+
+            VERSION="${TAG#v}"
+          else
+            # develop and feature/** branches get dev pre-releases
+            SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+            # Sanitize branch name for use in tag (e.g. feature/foo → feature-foo)
+            SANITIZED_BRANCH=$(echo "$BRANCH" | sed 's/[^A-Za-z0-9._-]/-/g')
+            TAG="v0.0.0-dev.${SANITIZED_BRANCH}.${SHORT_SHA}"
+            VERSION="0.0.0-dev.${SANITIZED_BRANCH}.${SHORT_SHA}"
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release: TAG=$TAG VERSION=$VERSION"
+
+      # ─── Cleanup old dev releases ───
+      # Each branch only cleans up its own dev releases to avoid interfering
+      # with other branches' builds.
+      - name: Delete old dev releases
+        if: github.ref_name != 'main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_TAG: ${{ steps.version.outputs.tag }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          # Build the tag prefix for this branch (e.g. v0.0.0-dev.develop. or v0.0.0-dev.feature-foo.)
+          SANITIZED_BRANCH=$(echo "$BRANCH" | sed 's/[^A-Za-z0-9._-]/-/g')
+          PREFIX="v0.0.0-dev.${SANITIZED_BRANCH}."
+
+          gh release list --limit 100 --json tagName \
+            --jq ".[] | select(.tagName | startswith(\"${PREFIX}\")) | .tagName" \
+          | while read -r OLD_TAG; do
+            if [ "$OLD_TAG" = "$CURRENT_TAG" ]; then
+              echo "Skipping current: $OLD_TAG"
+              continue
+            fi
+            echo "Deleting: $OLD_TAG"
+            gh release delete "$OLD_TAG" --yes --cleanup-tag || true
+          done
+
+      # ─── Create git tag ───
+      - name: Create git tag
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      # ─── Test driver ───
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: driver/go.sum
+
+      - name: Test driver
+        working-directory: driver
+        run: make test
+
+      # ─── Build driver with GoReleaser ───
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: release --clean
+          workdir: driver
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.tag }}
+
+      # ─── Build extension ───
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: yarn
+          cache-dependency-path: extension/yarn.lock
+
+      - name: Install extension dependencies
+        working-directory: extension
+        run: yarn install --frozen-lockfile
+
+      - name: Build extension
+        working-directory: extension
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: yarn build-pkg hetzner-node-driver
+
+      # ─── Upload extension to release ───
+      - name: Upload extension to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          cd extension/dist-pkg
+          TARBALL="hetzner-node-driver-${VERSION}.tgz"
+          tar -czf "../${TARBALL}" -C "hetzner-node-driver-${VERSION}" .
+          cd ..
+          gh release upload "$TAG" "$TARBALL" --clobber
