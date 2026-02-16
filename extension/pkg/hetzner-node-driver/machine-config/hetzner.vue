@@ -110,11 +110,35 @@ export default {
       // Fetch networks
       this.networkOptions = await this.$store.dispatch('hetzner/networkOptions', { credentialId: this.credentialId });
 
+      // Default: enable private network and disable public IPv6
+      if (this.value.usePrivateNetwork === undefined || (!this.value.usePrivateNetwork && !this.value.networks?.length)) {
+        this.value.usePrivateNetwork = true;
+        this.value.disablePublicIpv6 = true;
+
+        // Auto-select the first available private network
+        if (this.networkOptions.length && (!this.value.networks || !this.value.networks.length)) {
+          this.value.networks = [this.networkOptions[0].value];
+        }
+      }
+
       // Fetch firewalls
       this.firewallOptions = await this.$store.dispatch('hetzner/firewallOptions', { credentialId: this.credentialId });
 
+      // Default: create new firewall with auto-created RKE2 rules
+      if (!this.value.createFirewall && !this.value.firewalls?.length) {
+        this.firewallMode = 'create';
+        this.value.createFirewall = true;
+        this.value.autoCreateFirewallRules = true;
+      }
+
       // Fetch SSH keys
       this.sshKeyOptions = await this.$store.dispatch('hetzner/sshKeyOptions', { credentialId: this.credentialId });
+
+      // Default: use existing SSH key (select the first one)
+      if (!this.useExistingSshKey && !this.value.existingSshKey && this.sshKeyOptions.length) {
+        this.useExistingSshKey = true;
+        this.value.existingSshKey = this.sshKeyOptions[0].value;
+      }
     } catch (e) {
       console.error('Hetzner machine-config fetch error:', e);
       this.errors = exceptionToErrorsArray(e);
