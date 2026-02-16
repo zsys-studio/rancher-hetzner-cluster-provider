@@ -1,0 +1,15 @@
+plugin/hetzner-node-driver-1.0.0.umd.min.142.js
+plugin/hetzner-node-driver-1.0.0.umd.min.142.js.map
+plugin/hetzner-node-driver-1.0.0.umd.min.304.js
+plugin/hetzner-node-driver-1.0.0.umd.min.304.js.map
+plugin/hetzner-node-driver-1.0.0.umd.min.345.js
+plugin/hetzner-node-driver-1.0.0.umd.min.345.js.map
+plugin/hetzner-node-driver-1.0.0.umd.min.37.js
+plugin/hetzner-node-driver-1.0.0.umd.min.37.js.map
+plugin/hetzner-node-driver-1.0.0.umd.min.cloud-credential.js
+plugin/hetzner-node-driver-1.0.0.umd.min.cloud-credential.js.map
+plugin/hetzner-node-driver-1.0.0.umd.min.js
+plugin/hetzner-node-driver-1.0.0.umd.min.js.map
+plugin/hetzner-node-driver-1.0.0.umd.min.machine-config.js
+plugin/hetzner-node-driver-1.0.0.umd.min.machine-config.js.map
+plugin/package.json

@@ -1,0 +1,11 @@
+{
+  "name": "hetzner-node-driver",
+  "description": "Hetzner Cloud Node Driver for Rancher",
+  "version": "1.0.0",
+  "private": false,
+  "rancher": true,
+  "files": [
+    "**/*"
+  ],
+  "main": "hetzner-node-driver-1.0.0.umd.min.js"
+}
