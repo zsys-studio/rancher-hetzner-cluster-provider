@@ -14,12 +14,12 @@ entries:
       catalog.cattle.io/ui-extensions-version: '>= 3.0.0 < 4.0.0'
     apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-02-16T13:36:53.144596174Z"
+    created: "2026-02-16T13:40:48.090487767Z"
     description: Hetzner Cloud Node Driver for Rancher
-    digest: 4c0b33d9618e1ad810d541ab29d1061cfab027da3008eb6358d8652cd3629bfe
+    digest: af2834971cf20b3ee17f755fc1a87521584dcc2b5362149f2639de083882c8d6
     name: hetzner-node-driver
     type: application
     urls:
     - assets/hetzner-node-driver/hetzner-node-driver-1.0.0.tgz
     version: 1.0.0
-generated: "2026-02-16T13:36:53.144229161Z"
+generated: "2026-02-16T13:40:48.090116126Z"
