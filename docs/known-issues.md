@@ -50,6 +50,18 @@ block inter-node traffic from this node on ports 9345, 2379-2381, 10250, 8472,
 Always set `cluster-id` when the cluster has nodes with firewalls — even for nodes
 that don't create their own firewall.
 
+### Maximum 100 nodes per shared firewall
+
+Hetzner Cloud firewall rules support a maximum of 100 source IPs per rule. Since
+the driver adds each node's public IPv4 as a `/32` source CIDR to the internal
+rules, clusters with more than 100 nodes will hit this limit. The `SetRules` API
+call will fail with an `invalid_input` error and new nodes will not be able to
+join the cluster's shared firewall.
+
+**Workaround:** For clusters exceeding 100 nodes, use private networking for
+inter-node communication instead of relying on the shared firewall's internal
+rules, or manage firewall rules externally.
+
 ### "Trying to access option which does not exist" warning
 
 ```
@@ -115,7 +127,7 @@ Adding it as a dependency will cause `yarn install` to fail.
 
 Unlike components (cloud-credential, machine-config, l10n), Vuex store modules
 in the `store/` directory are NOT auto-imported. You must register them manually
-in `index.ts` using `plugin.addStore()`.
+in `index.js` using `plugin.addStore()`.
 
 ### Cloud Credential "Test" button
 

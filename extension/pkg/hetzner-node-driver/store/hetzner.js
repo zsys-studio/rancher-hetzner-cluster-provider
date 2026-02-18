@@ -23,7 +23,7 @@ function addParam(url, key, val) {
 const VALID_IMAGES = [
   /^ubuntu-\d+\.\d+$/,
   /^debian-\d+$/,
-  /^centos-\d+$/,
+  /^centos(-stream)?-\d+$/,
   /^fedora-\d+$/,
   /^rocky-\d+$/,
   /^alma-\d+$/,
@@ -66,7 +66,7 @@ export const actions = {
     return sortBy(out, 'label');
   },
 
-  async serverTypeOptions({ dispatch, rootGetters }, { credentialId }) {
+  async serverTypeOptions({ dispatch }, { credentialId }) {
     const data = await dispatch('cachedCommand', { credentialId, command: 'server_types' });
 
     const out = (data.server_types || [])
