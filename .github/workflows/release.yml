@@ -21,6 +21,9 @@ jobs:
           fetch-depth: 0
 
       # ─── Compute version ───
+      - name: Fetch latest tags
+        run: git fetch --tags --force
+
       - name: Compute version
         id: version
         run: |
