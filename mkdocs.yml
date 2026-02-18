@@ -1,0 +1,73 @@
+site_name: Hetzner Cloud Provider for Rancher
+site_url: https://zsys-studio.github.io/rancher-hetzner-cluster-provider/
+site_description: Provision RKE2/K3s clusters on Hetzner Cloud directly from the Rancher UI
+site_author: Zsys Studio
+repo_url: https://github.com/zsys-studio/rancher-hetzner-cluster-provider
+repo_name: zsys-studio/rancher-hetzner-cluster-provider
+edit_uri: edit/main/docs/
+copyright: >
+  Copyright &copy; 2025 Zsys Studio &mdash; Licensed under
+  <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: red
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: red
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/zsys-studio/rancher-hetzner-cluster-provider
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Architecture: architecture.md
+  - Known Issues: known-issues.md
+  - Development:
+      - Development Guide: development.md
+      - Contributing: contributing.md
