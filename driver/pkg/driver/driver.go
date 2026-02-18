@@ -44,9 +44,9 @@ type Driver struct {
 	Firewalls         []string
 
 	// Firewall management
-	CreateFirewall          bool
-	FirewallName            string
-	AutoCreateFirewallRules bool
+	CreateFirewall          bool   // create a shared cluster firewall and attach it to this server
+	FirewallName            string // custom name for the shared firewall (default: rancher-<cluster-id>)
+	AutoCreateFirewallRules bool   // populate the firewall with RKE2 rules on creation; only meaningful when CreateFirewall is true
 
 	// Cluster identity (used for shared firewall and resource labeling)
 	ClusterID string
@@ -272,6 +272,11 @@ func (d *Driver) Create() error {
 	// Set up shared firewall (after server is provisioned and has an IP)
 	if d.CreateFirewall {
 		if err := d.setupFirewall(ctx); err != nil {
+			// Clean up server so it doesn't leak if firewall setup fails.
+			// The SSH key is cleaned up in Remove() as well, but we do it here
+			// since Rancher may not call Remove() if Create() returns an error
+			// with a zero ServerID.
+			d.cleanupServer(ctx)
 			return err
 		}
 	} else if d.ClusterID != "" && !d.DisablePublicIPv4 {
@@ -772,6 +777,28 @@ func (d *Driver) Remove() error {
 	}
 
 	return serverDelErr
+}
+
+// cleanupServer performs best-effort deletion of the server and SSH key.
+// Called when Create() fails after the server was already provisioned (e.g.
+// firewall setup failure) to avoid leaking the server in Hetzner.
+func (d *Driver) cleanupServer(ctx context.Context) {
+	if d.ServerID != 0 {
+		server, _, err := d.getClient().Server.GetByID(ctx, d.ServerID)
+		if err != nil {
+			log.Warnf("Failed to get server %d for cleanup: %v", d.ServerID, err)
+		} else if server != nil {
+			result, _, err := d.getClient().Server.DeleteWithResult(ctx, server)
+			if err != nil {
+				log.Warnf("Failed to delete server %d during cleanup: %v", d.ServerID, err)
+			} else if err := d.waitForAction(ctx, result.Action); err != nil {
+				log.Warnf("Server %d cleanup deletion action failed: %v", d.ServerID, err)
+			} else {
+				log.Infof("Cleaned up server %d after firewall setup failure", d.ServerID)
+			}
+		}
+	}
+	d.deleteSSHKey(ctx)
 }
 
 func (d *Driver) deleteSSHKey(ctx context.Context) {

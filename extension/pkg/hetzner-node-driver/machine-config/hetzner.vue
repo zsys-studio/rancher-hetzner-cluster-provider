@@ -167,6 +167,11 @@ export default {
       firewallMode,
       clusterIdAutoSet:  false,
       errors:            [],
+
+      // Preserved values when toggling firewall mode so users don't lose input
+      savedFirewalls:              this.value?.firewalls?.length ? [...this.value.firewalls] : [],
+      savedFirewallName:           this.value?.firewallName || '',
+      savedAutoCreateFirewallRules: this.value?.autoCreateFirewallRules ?? true,
     };
   },
 
@@ -188,7 +193,15 @@ export default {
       }
     },
 
-    firewallMode(val) {
+    firewallMode(val, oldVal) {
+      // Save current values before switching away
+      if (oldVal === 'existing') {
+        this.savedFirewalls = this.value.firewalls?.length ? [...this.value.firewalls] : [];
+      } else if (oldVal === 'create') {
+        this.savedFirewallName = this.value.firewallName || '';
+        this.savedAutoCreateFirewallRules = this.value.autoCreateFirewallRules ?? true;
+      }
+
       if (val === 'none') {
         this.value.firewalls = [];
         this.value.createFirewall = false;
@@ -198,9 +211,14 @@ export default {
         this.value.createFirewall = false;
         this.value.firewallName = '';
         this.value.autoCreateFirewallRules = false;
+        // Restore previously selected firewalls
+        this.value.firewalls = this.savedFirewalls.length ? [...this.savedFirewalls] : [];
       } else if (val === 'create') {
         this.value.firewalls = [];
         this.value.createFirewall = true;
+        // Restore previously entered name and checkbox state
+        this.value.firewallName = this.savedFirewallName;
+        this.value.autoCreateFirewallRules = this.savedAutoCreateFirewallRules;
       }
     },
 

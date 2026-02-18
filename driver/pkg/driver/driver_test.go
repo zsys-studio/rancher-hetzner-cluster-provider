@@ -1686,6 +1686,221 @@ func TestCreate_ServerFailure_CleansUpSSHKey(t *testing.T) {
 	}
 }
 
+func TestCreate_WithFirewall(t *testing.T) {
+	firewallCreated := false
+	firewallAttached := false
+
+	mux := http.NewServeMux()
+
+	// SSH key creation
+	mux.HandleFunc("/ssh_keys", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			jsonResponse(w, http.StatusCreated, schema.SSHKeyCreateResponse{
+				SSHKey: schema.SSHKey{ID: 100, Name: "rancher-machine-test-pool-abc12-def34"},
+			})
+			return
+		}
+		jsonResponse(w, http.StatusOK, schema.SSHKeyListResponse{SSHKeys: []schema.SSHKey{}})
+	})
+
+	// Server type / location / image resolution
+	mux.HandleFunc("/server_types", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.ServerTypeListResponse{
+			ServerTypes: []schema.ServerType{standardServerType()},
+		})
+	})
+	mux.HandleFunc("/images", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.ImageListResponse{
+			Images: []schema.Image{standardImage()},
+		})
+	})
+	mux.HandleFunc("/locations", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.LocationListResponse{
+			Locations: []schema.Location{standardLocation()},
+		})
+	})
+
+	// Server creation
+	mux.HandleFunc("/servers", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			jsonResponse(w, http.StatusCreated, schema.ServerCreateResponse{
+				Server:      standardServer(200, "initializing"),
+				Action:      completedAction(50),
+				NextActions: []schema.Action{},
+			})
+			return
+		}
+		jsonResponse(w, http.StatusOK, schema.ServerListResponse{Servers: []schema.Server{}})
+	})
+
+	// Server get (for IP fetching and fetchPublicIPv4)
+	mux.HandleFunc("/servers/200", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.ServerGetResponse{
+			Server: standardServer(200, "running"),
+		})
+	})
+
+	// Firewall: no existing firewall, so one gets created
+	mux.HandleFunc("/firewalls", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			firewallCreated = true
+			jsonResponse(w, http.StatusCreated, schema.FirewallCreateResponse{
+				Firewall: schema.Firewall{ID: 300, Name: "rancher-test"},
+				Actions:  []schema.Action{},
+			})
+			return
+		}
+		// List — no existing firewalls
+		jsonResponse(w, http.StatusOK, schema.FirewallListResponse{Firewalls: []schema.Firewall{}})
+	})
+
+	// Firewall attach
+	mux.HandleFunc("/firewalls/300/actions/apply_to_resources", func(w http.ResponseWriter, r *http.Request) {
+		firewallAttached = true
+		jsonResponse(w, http.StatusCreated, schema.FirewallActionApplyToResourcesResponse{
+			Actions: []schema.Action{completedAction(60)},
+		})
+	})
+
+	registerActionPoller(mux, 50)
+
+	d, _ := newTestDriver(t, mux)
+	d.MachineName = "test-pool-abc12-def34"
+	d.ClusterID = "test"
+	d.CreateFirewall = true
+	d.AutoCreateFirewallRules = true
+
+	sshDir := t.TempDir()
+	d.BaseDriver.SSHKeyPath = filepath.Join(sshDir, "id_rsa")
+	d.BaseDriver.StorePath = sshDir
+
+	if err := d.Create(); err != nil {
+		t.Fatalf("Create() error: %v", err)
+	}
+
+	if !firewallCreated {
+		t.Error("firewall was not created")
+	}
+	if !firewallAttached {
+		t.Error("firewall was not attached to server")
+	}
+	if d.FirewallID != 300 {
+		t.Errorf("FirewallID = %d, want 300", d.FirewallID)
+	}
+	if d.PublicIPv4 != "1.2.3.4" {
+		t.Errorf("PublicIPv4 = %q, want %q", d.PublicIPv4, "1.2.3.4")
+	}
+}
+
+func TestCreate_FirewallFailure_CleansUpServer(t *testing.T) {
+	serverDeleted := false
+	sshKeyDeleted := false
+
+	mux := http.NewServeMux()
+
+	// SSH key creation + get + delete
+	mux.HandleFunc("/ssh_keys", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			jsonResponse(w, http.StatusCreated, schema.SSHKeyCreateResponse{
+				SSHKey: schema.SSHKey{ID: 100, Name: "rancher-machine-test-pool-abc12-def34"},
+			})
+			return
+		}
+		jsonResponse(w, http.StatusOK, schema.SSHKeyListResponse{SSHKeys: []schema.SSHKey{}})
+	})
+	mux.HandleFunc("/ssh_keys/100", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			sshKeyDeleted = true
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		jsonResponse(w, http.StatusOK, schema.SSHKeyGetResponse{
+			SSHKey: schema.SSHKey{ID: 100, Name: "rancher-machine-test-pool-abc12-def34"},
+		})
+	})
+
+	// Server type / location / image
+	mux.HandleFunc("/server_types", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.ServerTypeListResponse{
+			ServerTypes: []schema.ServerType{standardServerType()},
+		})
+	})
+	mux.HandleFunc("/images", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.ImageListResponse{
+			Images: []schema.Image{standardImage()},
+		})
+	})
+	mux.HandleFunc("/locations", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, schema.LocationListResponse{
+			Locations: []schema.Location{standardLocation()},
+		})
+	})
+
+	// Server creation succeeds
+	mux.HandleFunc("/servers", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			jsonResponse(w, http.StatusCreated, schema.ServerCreateResponse{
+				Server:      standardServer(200, "initializing"),
+				Action:      completedAction(50),
+				NextActions: []schema.Action{},
+			})
+			return
+		}
+		jsonResponse(w, http.StatusOK, schema.ServerListResponse{Servers: []schema.Server{}})
+	})
+
+	// Server get (for IP) and delete (for cleanup)
+	mux.HandleFunc("/servers/200", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			serverDeleted = true
+			jsonResponse(w, http.StatusOK, schema.ServerDeleteResponse{
+				Action: completedAction(70),
+			})
+			return
+		}
+		jsonResponse(w, http.StatusOK, schema.ServerGetResponse{
+			Server: standardServer(200, "running"),
+		})
+	})
+
+	// Firewall list returns empty (so it tries to create)
+	// Firewall creation fails
+	mux.HandleFunc("/firewalls", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			jsonResponse(w, http.StatusForbidden, schema.ErrorResponse{
+				Error: schema.Error{Code: "forbidden", Message: "insufficient permissions"},
+			})
+			return
+		}
+		// List returns empty (no existing firewall to fall back to)
+		jsonResponse(w, http.StatusOK, schema.FirewallListResponse{Firewalls: []schema.Firewall{}})
+	})
+
+	registerActionPoller(mux, 50)
+
+	d, _ := newTestDriver(t, mux)
+	d.MachineName = "test-pool-abc12-def34"
+	d.ClusterID = "test"
+	d.CreateFirewall = true
+	d.AutoCreateFirewallRules = true
+
+	sshDir := t.TempDir()
+	d.BaseDriver.SSHKeyPath = filepath.Join(sshDir, "id_rsa")
+	d.BaseDriver.StorePath = sshDir
+
+	err := d.Create()
+	if err == nil {
+		t.Fatal("expected error from Create() when firewall setup fails")
+	}
+
+	if !serverDeleted {
+		t.Error("server should have been cleaned up after firewall failure")
+	}
+	if !sshKeyDeleted {
+		t.Error("SSH key should have been cleaned up after firewall failure")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // getClient tests
 // ---------------------------------------------------------------------------
