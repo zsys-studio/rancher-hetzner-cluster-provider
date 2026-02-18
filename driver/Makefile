@@ -12,7 +12,7 @@ build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(BINARY)_linux_arm64 ./cmd/docker-machine-driver-hetzner
 
 test:
-	go test -v ./...
+	go test -v -race ./...
 
 clean:
 	rm -f $(BINARY) $(BINARY)_linux_*

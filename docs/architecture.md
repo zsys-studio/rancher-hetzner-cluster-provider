@@ -128,12 +128,11 @@ Rancher UI extension (Extensions API v3, Vue 3) that provides:
 
 | File | Description |
 |---|---|
-| `pkg/hetzner-node-driver/index.ts` | Plugin entry point, registers store module |
+| `pkg/hetzner-node-driver/index.js` | Plugin entry point, registers store module |
 | `pkg/hetzner-node-driver/store/hetzner.js` | Vuex store — API calls via Rancher proxy |
 | `pkg/hetzner-node-driver/cloud-credential/hetzner.vue` | Cloud credential form |
 | `pkg/hetzner-node-driver/machine-config/hetzner.vue` | Machine config form |
 | `pkg/hetzner-node-driver/l10n/en-us.yaml` | English translations |
-| `pkg/hetzner-node-driver/hetzner.svg` | Hetzner logo icon |
 
 ### Component Discovery
 
@@ -150,7 +149,7 @@ build time. Do not add it to `package.json` dependencies.
 
 ### Store Module
 
-The Vuex store must be explicitly registered via `plugin.addStore()` in `index.ts`.
+The Vuex store must be explicitly registered via `plugin.addStore()` in `index.js`.
 It is NOT auto-discovered like components.
 
 ### API Proxy

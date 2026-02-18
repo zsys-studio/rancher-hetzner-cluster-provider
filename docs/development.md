@@ -133,7 +133,7 @@ API=https://your-rancher-url yarn dev
 ```
 
 Opens at `https://localhost:8005/`. Log in with your Rancher credentials.
-Changes to Vue components hot-reload automatically. Changes to `index.ts`
+Changes to Vue components hot-reload automatically. Changes to `index.js`
 (store registration) require a server restart.
 
 ### Key Conventions
@@ -142,7 +142,7 @@ Changes to Vue components hot-reload automatically. Changes to `index.ts`
 - `cloud-credential/hetzner.vue` (not `Hetzner.vue` or `hetzner-cloud.vue`)
 - `machine-config/hetzner.vue`
 
-**Store module must be registered explicitly** in `index.ts` via
+**Store module must be registered explicitly** in `index.js` via
 `plugin.addStore('hetzner', ...)`. It is NOT auto-discovered.
 
 **API proxy auth header format:**
