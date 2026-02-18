@@ -312,7 +312,11 @@ func (d *Driver) setupFirewall(ctx context.Context) error {
 		return fmt.Errorf("failed to set up firewall: %w", err)
 	}
 	if err := d.attachFirewallToServer(ctx, fw); err != nil {
-		d.deleteFirewallIfOrphaned(ctx)
+		// Use a fresh context for cleanup — the parent ctx may be near its deadline
+		// after retries and API calls during firewall creation.
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cleanupCancel()
+		d.deleteFirewallIfOrphaned(cleanupCtx)
 		return fmt.Errorf("failed to attach firewall: %w", err)
 	}
 	// Skip addNodeToFirewall when we just created the firewall — the node's
@@ -322,8 +326,10 @@ func (d *Driver) setupFirewall(ctx context.Context) error {
 	// no IP to add to the internal rules.
 	if !created && d.PublicIPv4 != "" {
 		if err := d.addNodeToFirewall(ctx); err != nil {
-			d.removeNodeFromFirewall(ctx)
-			d.deleteFirewallIfOrphaned(ctx)
+			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cleanupCancel()
+			d.removeNodeFromFirewall(cleanupCtx)
+			d.deleteFirewallIfOrphaned(cleanupCtx)
 			return fmt.Errorf("failed to add node IP to firewall: %w", err)
 		}
 	}

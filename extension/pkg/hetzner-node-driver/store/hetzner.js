@@ -23,7 +23,7 @@ function addParam(url, key, val) {
 const VALID_IMAGES = [
   /^ubuntu-\d+\.\d+$/,
   /^debian-\d+$/,
-  /^centos-\d+$/,
+  /^centos(-stream)?-\d+$/,
   /^fedora-\d+$/,
   /^rocky-\d+$/,
   /^alma-\d+$/,
