@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/assets/logo.png" alt="Rancher Hetzner Cloud Provider" width="640">
-</p>
-
 # Hetzner Cloud Provider for Rancher
 
 Provision RKE2/K3s clusters on Hetzner Cloud directly from the Rancher UI, with full machine pool support.
@@ -21,7 +17,9 @@ A Rancher UI extension (Vue 3, extensions API v3) that adds Hetzner as a native 
 - Rancher v2.11.x
 - A Hetzner Cloud account with an API token (Read & Write permissions)
 
-## Installation
+## Quick Start
+
+See the [Installation Guide](installation.md) for detailed setup instructions.
 
 ### Step 1: Install the Node Driver
 
@@ -64,7 +62,7 @@ kubectl get nodedriver.management.cattle.io/hetzner -o jsonpath='{.status.condit
 5. Go back to **Extensions > Available** tab
 6. Find **Hetzner Cloud Node Driver** and click **Install**
 
-For more installation options (build from source, direct UIPlugin CR, Helm CLI), see [docs/installation.md](docs/installation.md).
+For more installation options (build from source, direct UIPlugin CR, Helm CLI), see the [Installation Guide](installation.md).
 
 ## Usage
 

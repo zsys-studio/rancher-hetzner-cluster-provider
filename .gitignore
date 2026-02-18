@@ -18,3 +18,6 @@ extension/dist-pkg/
 
 # macOS
 .DS_Store
+
+# MkDocs
+site/
