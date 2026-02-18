@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Rancher Hetzner Cloud Provider" width="640">
+</p>
+
 # Hetzner Cloud Provider for Rancher
 
 Provision RKE2/K3s clusters on Hetzner Cloud directly from the Rancher UI, with full machine pool support.
