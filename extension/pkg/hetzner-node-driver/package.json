@@ -1,6 +1,7 @@
 {
   "name": "hetzner-node-driver",
   "description": "Hetzner Cloud Node Driver for Rancher",
+  "icon": "https://raw.githubusercontent.com/Zsys-Studio/rancher-hetzner-cluster-provider/main/docs/assets/logo.svg",
   "version": "1.0.0",
   "private": false,
   "rancher": {
