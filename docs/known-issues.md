@@ -62,6 +62,20 @@ join the cluster's shared firewall.
 inter-node communication instead of relying on the shared firewall's internal
 rules, or manage firewall rules externally.
 
+### Cross-project snapshot transfer not available via API
+
+Hetzner Cloud does not expose a snapshot transfer endpoint in its public API. In
+multi-tenant architectures where each cluster runs in its own Hetzner Project,
+snapshots created in one project cannot be programmatically transferred to another.
+The only way to transfer a snapshot is manually via the Hetzner Cloud Console
+("Transfer to project" button on the snapshot detail page).
+
+This is an upstream Hetzner API limitation — not a driver or extension bug. If
+Hetzner adds API support for snapshot transfers in the future, the driver can be
+updated to support it.
+
+See: [#10](https://github.com/zsys-studio/rancher-hetzner-cluster-provider/issues/10)
+
 ### "Trying to access option which does not exist" warning
 
 ```

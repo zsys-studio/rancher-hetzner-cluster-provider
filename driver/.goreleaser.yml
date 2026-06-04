@@ -22,3 +22,24 @@ checksum:
 release:
   draft: false
   prerelease: auto
+
+changelog:
+  sort: asc
+  groups:
+    - title: "🚀 Features"
+      regexp: '^.*?feat(\(.+\))?\!?:.+$'
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: '^.*?fix(\(.+\))?\!?:.+$'
+      order: 1
+    - title: "📖 Documentation"
+      regexp: '^.*?docs(\(.+\))?\!?:.+$'
+      order: 2
+    - title: "🔧 CI/CD & Maintenance"
+      regexp: '^.*?(ci|chore|build|refactor)(\(.+\))?\!?:.+$'
+      order: 3
+    - title: "Other"
+      order: 999
+  filters:
+    exclude:
+      - '^Merge '

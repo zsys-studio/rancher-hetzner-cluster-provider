@@ -1,0 +1,70 @@
+# Label definitions for the repository.
+# Sync with: .github/scripts/sync-labels.sh
+
+# ── Type ──
+- name: bug
+  color: "d73a4a"
+  description: Something isn't working
+
+- name: enhancement
+  color: "a2eeef"
+  description: New feature or improvement
+
+- name: documentation
+  color: "0075ca"
+  description: Documentation improvements
+
+- name: question
+  color: "d876e3"
+  description: Further information requested
+
+# ── Priority ──
+- name: p0-critical
+  color: "b60205"
+  description: Production down / data loss
+
+- name: p1-high
+  color: "d93f0b"
+  description: Major feature broken, no workaround
+
+- name: p2-medium
+  color: "fbca04"
+  description: Important but has workaround
+
+- name: p3-low
+  color: "0e8a16"
+  description: Nice to have, no urgency
+
+# ── Component ──
+- name: driver
+  color: "1d76db"
+  description: Machine driver (Go)
+
+- name: extension
+  color: "5319e7"
+  description: UI extension (Vue)
+
+- name: ci-cd
+  color: "e4e669"
+  description: CI/CD and release pipeline
+
+# ── Status ──
+- name: needs-triage
+  color: "ededed"
+  description: Awaiting initial review
+
+- name: help-wanted
+  color: "008672"
+  description: Extra attention needed
+
+- name: good-first-issue
+  color: "7057ff"
+  description: Good for newcomers
+
+- name: wontfix
+  color: "e6e6e6"
+  description: Will not be addressed
+
+- name: duplicate
+  color: "cfd3d7"
+  description: Duplicate of another issue

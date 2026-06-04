@@ -246,3 +246,37 @@ jobs:
           git add -A
           git commit -m "Publish extension ${VERSION}" || true
           git push origin HEAD:"${TARGET_BRANCH}"
+
+      # ─── Enrich stable release notes ───
+      - name: Enrich stable release notes
+        if: github.ref_name == 'main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          # Find previous stable tag
+          PREV=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' \
+            | grep -v '-' | sort -V | tail -n2 | head -n1)
+          [ "$PREV" = "$TAG" ] && PREV=""
+
+          # Build API args
+          ARGS=(-f tag_name="$TAG")
+          [ -n "$PREV" ] && ARGS+=(-f previous_tag_name="$PREV")
+
+          # Get GitHub auto-generated notes for contributor mentions
+          AUTO=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+            "${ARGS[@]}" --jq '.body')
+
+          # Extract "New Contributors" section + "Full Changelog" link
+          EXTRAS=""
+          if echo "$AUTO" | grep -q '^## New Contributors'; then
+            EXTRAS=$(echo "$AUTO" | sed -n '/^## New Contributors/,$p')
+          elif echo "$AUTO" | grep -q '\*\*Full Changelog\*\*'; then
+            EXTRAS=$(echo "$AUTO" | grep '\*\*Full Changelog\*\*')
+          fi
+
+          if [ -n "$EXTRAS" ]; then
+            BODY=$(gh release view "$TAG" --json body --jq '.body')
+            printf '%s\n\n%s\n' "$BODY" "$EXTRAS" > /tmp/enriched.md
+            gh release edit "$TAG" --notes-file /tmp/enriched.md
+          fi
